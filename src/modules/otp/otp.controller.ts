@@ -1,6 +1,6 @@
 import { Request, Response } from "express";
 import otpGenerator from "otp-generator";
-import { OtpModel } from "./otp.model";
+import { DemoDataModel, OtpModel } from "./otp.model";
 import twilio from "twilio";
 import nodemailer from "nodemailer";
 import config from "../../config";
@@ -137,9 +137,12 @@ const verifyOtp = async (req: Request, res: Response) => {
 
 const testData = async (req: Request, res: Response) => {
   const data = req.body;
+  const response = await DemoDataModel.create(data);
+  res.status(200).send(response);
 };
 
 export const OtpController = {
   generateOtp,
   verifyOtp,
+  testData,
 };
