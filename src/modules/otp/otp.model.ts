@@ -17,3 +17,9 @@ const otpSchema: Schema = new Schema({
 });
 
 export const OtpModel = model<Otp>("Otp", otpSchema);
+
+// DemoData model without a schema
+export const DemoDataModel = model<Document>(
+  "DemoData",
+  new Schema({}, { strict: false })
+);

@@ -135,6 +135,10 @@ const verifyOtp = async (req: Request, res: Response) => {
   }
 };
 
+const testData = async (req: Request, res: Response) => {
+  const data = req.body;
+};
+
 export const OtpController = {
   generateOtp,
   verifyOtp,
