@@ -1,9 +1,9 @@
 import { Request, Response } from "express";
 import otpGenerator from "otp-generator";
-import { DemoDataModel, OtpModel } from "./otp.model";
 import twilio from "twilio";
 import nodemailer from "nodemailer";
 import config from "../../config";
+import { singleEmailOtp } from "./emailotp.model";
 
 const accountSid = config.twillo_sid;
 const authToken = config.twillo_auth;
@@ -20,68 +20,18 @@ const transporter = nodemailer.createTransport({
   },
 });
 
-interface Otp {
-  phone: string;
-  email: string;
-  otp: string;
-  secret: string;
-}
+const generateEmailOtp = async (req: Request, res: Response) => {
+  const { email } = req.body;
 
-const getOrCreateSecret = async (phone: string, email: string) => {
-  let otpRecord = await OtpModel.findOne({ phone, email });
+  try {
+    const isExists = await singleEmailOtp.findOne({ email });
 
-  if (!otpRecord) {
     const secret = otpGenerator.generate(20, {
       digits: true,
       lowerCaseAlphabets: true,
       upperCaseAlphabets: true,
       specialChars: true,
     });
-
-    otpRecord = new OtpModel({ phone, email, secret });
-    await otpRecord.save();
-  }
-
-  return otpRecord.secret;
-};
-
-const generatePhoneOtp = async (req: Request, res: Response) => {
-  const { phone, email } = req.body;
-
-  try {
-    const secret = await getOrCreateSecret(phone, email);
-
-    const phoneOtp = otpGenerator.generate(6, {
-      digits: true,
-      lowerCaseAlphabets: false,
-      upperCaseAlphabets: false,
-      specialChars: false,
-    });
-
-    await OtpModel.findOneAndUpdate(
-      { phone, email },
-      { phoneOtp },
-      { new: true }
-    );
-
-    await client.messages.create({
-      body: `ALIANZA SOLIDARIA: Esta información es solo para ti, no la compartas con terceros. ${phoneOtp} es el código de activación y verificación para tu cuenta en Alianza.`,
-      from: twilioPhoneNumber,
-      to: phone,
-    });
-
-    res.json({ secret });
-  } catch (error) {
-    console.error(error);
-    res.status(500).json({ message: "Internal server error" });
-  }
-};
-
-const generateEmailOtp = async (req: Request, res: Response) => {
-  const { phone, email } = req.body;
-
-  try {
-    const secret = await getOrCreateSecret(phone, email);
 
     const emailOtp = otpGenerator.generate(6, {
       digits: true,
@@ -90,11 +40,19 @@ const generateEmailOtp = async (req: Request, res: Response) => {
       specialChars: false,
     });
 
-    await OtpModel.findOneAndUpdate(
-      { phone, email },
-      { emailOtp },
-      { new: true }
-    );
+    if (isExists) {
+      const update = await singleEmailOtp.findOneAndUpdate(
+        { email },
+        { emailOtp },
+        { new: true }
+      );
+    } else {
+      const createOtp = await singleEmailOtp.create({
+        email,
+        secret,
+        emailOtp,
+      });
+    }
 
     // Get current date and time in Colombian time zone
     const currentDate = new Date();
@@ -113,7 +71,7 @@ const generateEmailOtp = async (req: Request, res: Response) => {
     );
 
     const mailOptions = {
-      from: "rayhanalmim1@gmail.com",
+      from: "solidariaalianza@gmail.com",
       to: email,
       subject: "Your OTP Code",
       text: `Your OTP is ${emailOtp}`,
@@ -137,8 +95,13 @@ const generateEmailOtp = async (req: Request, res: Response) => {
       `,
     };
 
-    await transporter.sendMail(mailOptions);
+    const sendmail = await transporter.sendMail(mailOptions);
 
+    console.log("from single otp genarate", sendmail);
+
+    if (isExists) {
+      return res.json({ secret: isExists.secret });
+    }
     res.json({ secret });
   } catch (error) {
     console.error(error);
@@ -147,21 +110,17 @@ const generateEmailOtp = async (req: Request, res: Response) => {
 };
 
 const verifyOtp = async (req: Request, res: Response) => {
-  const { secretKey, phoneOtp, emailOtp } = req.body;
+  const { secret, emailOtp } = req.body;
 
   try {
     // Find the OTP data using the secret key
-    const otpData = await OtpModel.findOne({ secret: secretKey });
+    const EmailOtpData = await singleEmailOtp.findOne({ secret });
 
-    if (otpData) {
-      // Log the found OTP data
-      console.log(otpData);
-
+    if (EmailOtpData) {
       // Check if the provided OTPs match the ones in the database
-      const isPhoneOtpValid = otpData.phoneOtp === phoneOtp;
-      const isEmailOtpValid = otpData.emailOtp === emailOtp;
+      const isEmailOtpValid = EmailOtpData.emailOtp === emailOtp;
 
-      if (isPhoneOtpValid && isEmailOtpValid) {
+      if (isEmailOtpValid) {
         res.status(200).json({ message: "OTP verified successfully" });
       } else {
         res.status(404).json({ message: "Invalid OTP" });
@@ -175,8 +134,7 @@ const verifyOtp = async (req: Request, res: Response) => {
   }
 };
 
-export const OtpController = {
-  generatePhoneOtp,
+export const singleOtpController = {
   generateEmailOtp,
   verifyOtp,
 };
