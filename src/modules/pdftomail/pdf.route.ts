@@ -12,7 +12,7 @@ router.post(
   PdfController.generateMultiplePagePdf
 );
 router.post(
-  "/generate-multi-pdf-after-verification",
+  "/get-pdf-after-verification",
   VerifyedPdfController.verifyedMultiplePagePdf
 );
 

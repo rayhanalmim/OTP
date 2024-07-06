@@ -33,17 +33,22 @@ const s3 = new AWS.S3();
 
 const verifyedMultiplePagePdf = async (req: Request, res: Response) => {
   try {
+    const { UserUID } = req.body;
+
+    const currentDPF = await PdfDataModel.findOne({ UserUID });
+
+    if (!currentDPF) {
+      return res.status(400).send({ messege: "no user found with this ID" });
+    }
+
     const {
       userName,
       CC,
       savingType,
-      UserUID,
       typeOfContract,
       totalDepositValue,
       company,
-    } = req.body;
-
-    const isexists = await PdfDataModel.findOne({ UserUID });
+    } = currentDPF as any;
 
     // --------------------------------------------------date
     // Get current date and time in Colombian time zone
