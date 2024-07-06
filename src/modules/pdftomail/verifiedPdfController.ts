@@ -44,7 +44,9 @@ const verifyedMultiplePagePdf = async (req: Request, res: Response) => {
 
     const currentDPF = await PdfDataModel.findOne({ UserUID });
 
-    if (currentDPF) {
+    const { secretCode: secret } = currentDPF as any;
+
+    if (!secret) {
       const result = await PdfDataModel.updateOne(
         { UserUID: UserUID },
         {
