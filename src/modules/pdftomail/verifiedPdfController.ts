@@ -31,15 +31,36 @@ console.log(
 );
 const s3 = new AWS.S3();
 
+const code = otpGenerator.generate(6, {
+  digits: true,
+  lowerCaseAlphabets: false,
+  upperCaseAlphabets: false,
+  specialChars: false,
+});
+
 const verifyedMultiplePagePdf = async (req: Request, res: Response) => {
   try {
     const { UserUID } = req.body;
 
     const currentDPF = await PdfDataModel.findOne({ UserUID });
 
+    if (currentDPF) {
+      const result = await PdfDataModel.updateOne(
+        { UserUID: UserUID },
+        {
+          $set: {
+            secretCode: code,
+          },
+        },
+        { upsert: true }
+      );
+    }
+
     if (!currentDPF) {
       return res.status(400).send({ messege: "no user found with this ID" });
     }
+
+    const currentDPFData = await PdfDataModel.findOne({ UserUID });
 
     const {
       userName,
@@ -48,17 +69,12 @@ const verifyedMultiplePagePdf = async (req: Request, res: Response) => {
       typeOfContract,
       totalDepositValue,
       company,
-    } = currentDPF as any;
+      secretCode,
+    } = currentDPFData as any;
 
     // --------------------------------------------------date
     // Get current date and time in Colombian time zone
     const currentDate = new Date();
-    const code = otpGenerator.generate(6, {
-      digits: true,
-      lowerCaseAlphabets: false,
-      upperCaseAlphabets: false,
-      specialChars: false,
-    });
 
     // Options for formatting date to get components
     const options: Intl.DateTimeFormatOptions = {
@@ -825,7 +841,7 @@ const verifyedMultiplePagePdf = async (req: Request, res: Response) => {
           "field33 copy 6": {
             type: "readOnlyText",
             icon: '<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-type"><polyline points="4 7 4 4 20 4 20 7"/><line x1="9" x2="15" y1="20" y2="20"/><line x1="12" x2="12" y1="4" y2="20"/></svg>',
-            content: ` ${code}`,
+            content: ` ${secretCode}`,
             position: { x: 101, y: 272.56 },
             width: 17.73,
             height: 6.03,
@@ -1515,7 +1531,7 @@ const verifyedMultiplePagePdf = async (req: Request, res: Response) => {
           "field33 copy 6": {
             type: "readOnlyText",
             icon: '<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-type"><polyline points="4 7 4 4 20 4 20 7"/><line x1="9" x2="15" y1="20" y2="20"/><line x1="12" x2="12" y1="4" y2="20"/></svg>',
-            content: ` ${code}`,
+            content: ` ${secretCode}`,
             position: { x: 101, y: 272.56 },
             width: 17.73,
             height: 6.03,
