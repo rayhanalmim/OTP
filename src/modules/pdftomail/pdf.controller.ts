@@ -14,6 +14,7 @@ import {
 import config from "../../config";
 import { PDFDocument } from "pdf-lib"; // Temporarily using pdf-lib for merging
 import { images } from "./images";
+import { PdfDataModel } from "./pdf.model";
 
 // Configure AWS
 AWS.config.update({
@@ -29,767 +30,45 @@ console.log(
 );
 const s3 = new AWS.S3();
 
-const generateSinglePdf = async (req: Request, res: Response) => {
-  try {
-    const { userName, CC, savingType } = req.body;
-
-    // --------------------------------------------------date
-    // Get current date and time in Colombian time zone
-    const currentDate = new Date();
-
-    // Options for formatting date to get components
-    const options: Intl.DateTimeFormatOptions = {
-      day: "2-digit",
-      month: "numeric",
-      year: "numeric",
-      timeZone: "America/Bogota",
-    };
-
-    // Format the date using the options
-    const formattedDateParts = new Intl.DateTimeFormat(
-      "es-ES",
-      options
-    ).formatToParts(currentDate);
-
-    // Extract and map the parts, with default values to avoid undefined
-    const day =
-      formattedDateParts.find((part) => part.type === "day")?.value || "01";
-    const month =
-      formattedDateParts.find((part) => part.type === "month")?.value || "1";
-    const year =
-      formattedDateParts.find((part) => part.type === "year")?.value || "2024";
-
-    // Define month names in uppercase (in Spanish)
-    const monthNames = [
-      "ENERO",
-      "FEBRERO",
-      "MARZO",
-      "ABRIL",
-      "MAYO",
-      "JUNIO",
-      "JULIO",
-      "AGOSTO",
-      "SEPTIEMBRE",
-      "OCTUBRE",
-      "NOVIEMBRE",
-      "DICIEMBRE",
-    ];
-
-    // Convert month number to month name (adjust index by -1 since array is 0-based)
-    const monthIndex = parseInt(month) - 1;
-    const monthName = monthNames[monthIndex] || "ENERO";
-
-    // Combine the parts to get the desired format
-    const formattedDate = `${day} ${monthName} ${year}`;
-
-    const template: Template = {
-      schemas: [
-        {
-          field1: {
-            type: "image",
-            icon: '<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-image"><rect width="18" height="18" x="3" y="3" rx="2" ry="2"/><circle cx="9" cy="9" r="2"/><path d="m21 15-3.086-3.086a2 2 0 0 0-2.828 0L6 21"/></svg>',
-            content: images.companyLogo,
-            position: { x: 15.61, y: 18.41 },
-            width: 55.33,
-            height: 19.1,
-            rotate: 0,
-            opacity: 1,
-          },
-          field2: {
-            type: "line",
-            icon: '<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-minus"><path d="M5 12h14"/></svg>',
-            position: { x: 177, y: 29 },
-            width: 22,
-            height: 2,
-            rotate: 90,
-            opacity: 1,
-            readOnly: true,
-            color: "#ff6666",
-          },
-          field3: {
-            type: "readOnlyText",
-            icon: '<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-type"><polyline points="4 7 4 4 20 4 20 7"/><line x1="9" x2="15" y1="20" y2="20"/><line x1="12" x2="12" y1="4" y2="20"/></svg>',
-            content: "NIT 901.813.044-1",
-            position: { x: 151, y: 19.04 },
-            width: 33.89,
-            height: 5.77,
-            rotate: 0,
-            alignment: "left",
-            verticalAlignment: "top",
-            fontSize: 11,
-            lineHeight: 1,
-            characterSpacing: 0,
-            fontColor: "#000000",
-            backgroundColor: "",
-            opacity: 1,
-            readOnly: true,
-            fontName: "NotoSerifJP-Regular",
-          },
-          "field3 copy": {
-            type: "readOnlyText",
-            icon: '<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-type"><polyline points="4 7 4 4 20 4 20 7"/><line x1="9" x2="15" y1="20" y2="20"/><line x1="12" x2="12" y1="4" y2="20"/></svg>',
-            content: "Ciudad de Bogota",
-            position: { x: 153, y: 24.04 },
-            width: 33.62,
-            height: 5.77,
-            rotate: 0,
-            alignment: "left",
-            verticalAlignment: "top",
-            fontSize: 11,
-            lineHeight: 1,
-            characterSpacing: 0,
-            fontColor: "#000000",
-            backgroundColor: "",
-            opacity: 1,
-            readOnly: true,
-            fontName: "NotoSerifJP-Regular",
-          },
-          "field3 copy 2": {
-            type: "readOnlyText",
-            icon: '<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-type"><polyline points="4 7 4 4 20 4 20 7"/><line x1="9" x2="15" y1="20" y2="20"/><line x1="12" x2="12" y1="4" y2="20"/></svg>',
-            content: "Calle 98 # 22 - 64 OFC 710",
-            position: { x: 137.09, y: 29.04 },
-            width: 48.97,
-            height: 5.77,
-            rotate: 0,
-            alignment: "left",
-            verticalAlignment: "top",
-            fontSize: 11,
-            lineHeight: 1,
-            characterSpacing: 0,
-            fontColor: "#000000",
-            backgroundColor: "",
-            opacity: 1,
-            readOnly: true,
-            fontName: "NotoSerifJP-Regular",
-          },
-          "field3 copy 3": {
-            type: "readOnlyText",
-            icon: '<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-type"><polyline points="4 7 4 4 20 4 20 7"/><line x1="9" x2="15" y1="20" y2="20"/><line x1="12" x2="12" y1="4" y2="20"/></svg>',
-            content: "Whatsapp 315 779 2999",
-            position: { x: 143, y: 34.04 },
-            width: 45,
-            height: 5.77,
-            rotate: 0,
-            alignment: "left",
-            verticalAlignment: "top",
-            fontSize: 11,
-            lineHeight: 1,
-            characterSpacing: 0,
-            fontColor: "#000000",
-            backgroundColor: "",
-            opacity: 1,
-            readOnly: true,
-            fontName: "NotoSerifJP-Regular",
-          },
-          field7: {
-            type: "readOnlyText",
-            icon: '<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-type"><polyline points="4 7 4 4 20 4 20 7"/><line x1="9" x2="15" y1="20" y2="20"/><line x1="12" x2="12" y1="4" y2="20"/></svg>',
-            content: "APERTURA LINEA DE AHORRO MI NOMINA",
-            position: { x: 54.32, y: 47.8 },
-            width: 101.36,
-            height: 6.56,
-            rotate: 0,
-            alignment: "left",
-            verticalAlignment: "top",
-            fontSize: 13,
-            lineHeight: 1,
-            characterSpacing: 0,
-            fontColor: "#000000",
-            backgroundColor: "",
-            opacity: 1,
-            readOnly: true,
-          },
-          "field7 copy": {
-            type: "readOnlyText",
-            icon: '<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-type"><polyline points="4 7 4 4 20 4 20 7"/><line x1="9" x2="15" y1="20" y2="20"/><line x1="12" x2="12" y1="4" y2="20"/></svg>',
-            content: formattedDate,
-            position: { x: 16, y: 61.8 },
-            width: 32.83,
-            height: 6.56,
-            rotate: 0,
-            alignment: "left",
-            verticalAlignment: "top",
-            fontSize: 13,
-            lineHeight: 1,
-            characterSpacing: 0,
-            fontColor: "#000000",
-            backgroundColor: "#f5ff50",
-            opacity: 1,
-            readOnly: true,
-            fontName: "NotoSerifJP-Regular",
-          },
-          "field7 copy 2": {
-            type: "readOnlyText",
-            icon: '<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-type"><polyline points="4 7 4 4 20 4 20 7"/><line x1="9" x2="15" y1="20" y2="20"/><line x1="12" x2="12" y1="4" y2="20"/></svg>',
-            content: "Fecha apertura",
-            position: { x: 16, y: 67.8 },
-            width: 34.68,
-            height: 6.56,
-            rotate: 0,
-            alignment: "left",
-            verticalAlignment: "top",
-            fontSize: 13,
-            lineHeight: 1,
-            characterSpacing: 0,
-            fontColor: "#000000",
-            backgroundColor: "",
-            opacity: 1,
-            readOnly: true,
-            fontName: "NotoSerifJP-Regular",
-          },
-          "field7 copy 3": {
-            type: "readOnlyText",
-            icon: '<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-type"><polyline points="4 7 4 4 20 4 20 7"/><line x1="9" x2="15" y1="20" y2="20"/><line x1="12" x2="12" y1="4" y2="20"/></svg>',
-            content: "LESLEY TATIANA HORTA BARAJAS",
-            position: { x: 16, y: 79.8 },
-            width: 79.92,
-            height: 6.56,
-            rotate: 0,
-            alignment: "left",
-            verticalAlignment: "top",
-            fontSize: 13,
-            lineHeight: 1,
-            characterSpacing: 0,
-            fontColor: "#000000",
-            backgroundColor: "#f5ff50",
-            opacity: 1,
-            readOnly: true,
-            fontName: "NotoSerifJP-Regular",
-          },
-          "field7 copy 4": {
-            type: "readOnlyText",
-            icon: '<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-type"><polyline points="4 7 4 4 20 4 20 7"/><line x1="9" x2="15" y1="20" y2="20"/><line x1="12" x2="12" y1="4" y2="20"/></svg>',
-            content: userName,
-            position: { x: 16, y: 86.8 },
-            width: 47.11,
-            height: 6.56,
-            rotate: 0,
-            alignment: "left",
-            verticalAlignment: "top",
-            fontSize: 13,
-            lineHeight: 1,
-            characterSpacing: 0,
-            fontColor: "#000000",
-            backgroundColor: "",
-            opacity: 1,
-            readOnly: true,
-            fontName: "NotoSerifJP-Regular",
-          },
-          "field7 copy 5": {
-            type: "readOnlyText",
-            icon: '<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-type"><polyline points="4 7 4 4 20 4 20 7"/><line x1="9" x2="15" y1="20" y2="20"/><line x1="12" x2="12" y1="4" y2="20"/></svg>',
-            content: CC,
-            position: { x: 153, y: 79.8 },
-            width: 31.24,
-            height: 6.56,
-            rotate: 0,
-            alignment: "left",
-            verticalAlignment: "top",
-            fontSize: 13,
-            lineHeight: 1,
-            characterSpacing: 0,
-            fontColor: "#000000",
-            backgroundColor: "#f5ff50",
-            opacity: 1,
-            readOnly: true,
-            fontName: "NotoSerifJP-Regular",
-          },
-          "field7 copy 6": {
-            type: "readOnlyText",
-            icon: '<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-type"><polyline points="4 7 4 4 20 4 20 7"/><line x1="9" x2="15" y1="20" y2="20"/><line x1="12" x2="12" y1="4" y2="20"/></svg>',
-            content: "CC",
-            position: { x: 153.32, y: 86.8 },
-            width: 8.75,
-            height: 6.56,
-            rotate: 0,
-            alignment: "left",
-            verticalAlignment: "top",
-            fontSize: 13,
-            lineHeight: 1,
-            characterSpacing: 0,
-            fontColor: "#000000",
-            backgroundColor: "",
-            opacity: 1,
-            readOnly: true,
-            fontName: "NotoSerifJP-Regular",
-          },
-          "field7 copy 7": {
-            type: "readOnlyText",
-            icon: '<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-type"><polyline points="4 7 4 4 20 4 20 7"/><line x1="9" x2="15" y1="20" y2="20"/><line x1="12" x2="12" y1="4" y2="20"/></svg>',
-            content: "Solicito la apertura de",
-            position: { x: 16, y: 100.8 },
-            width: 51.34,
-            height: 6.56,
-            rotate: 0,
-            alignment: "left",
-            verticalAlignment: "top",
-            fontSize: 13,
-            lineHeight: 1,
-            characterSpacing: 0,
-            fontColor: "#000000",
-            backgroundColor: "",
-            opacity: 1,
-            readOnly: true,
-            fontName: "NotoSerifJP-Regular",
-          },
-          "field7 copy 8": {
-            type: "readOnlyText",
-            icon: '<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-type"><polyline points="4 7 4 4 20 4 20 7"/><line x1="9" x2="15" y1="20" y2="20"/><line x1="12" x2="12" y1="4" y2="20"/></svg>',
-            content: "LESLEY TATIANA HORTA BARAJAS",
-            position: { x: 63, y: 100.8 },
-            width: 80.19,
-            height: 6.56,
-            rotate: 0,
-            alignment: "left",
-            verticalAlignment: "top",
-            fontSize: 13,
-            lineHeight: 1,
-            characterSpacing: 0,
-            fontColor: "#000000",
-            backgroundColor: "#7bff16",
-            opacity: 1,
-            readOnly: true,
-            fontName: "NotoSerifJP-Regular",
-          },
-          "field7 copy 9": {
-            type: "readOnlyText",
-            icon: '<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-type"><polyline points="4 7 4 4 20 4 20 7"/><line x1="9" x2="15" y1="20" y2="20"/><line x1="12" x2="12" y1="4" y2="20"/></svg>',
-            content: ", la cual será usada",
-            position: { x: 143.9, y: 100.8 },
-            width: 44.72,
-            height: 6.56,
-            rotate: 0,
-            alignment: "left",
-            verticalAlignment: "top",
-            fontSize: 13,
-            lineHeight: 1,
-            characterSpacing: 0,
-            fontColor: "#000000",
-            backgroundColor: "",
-            opacity: 1,
-            readOnly: true,
-            fontName: "NotoSerifJP-Regular",
-          },
-          "field7 copy 10": {
-            type: "readOnlyText",
-            icon: '<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-type"><polyline points="4 7 4 4 20 4 20 7"/><line x1="9" x2="15" y1="20" y2="20"/><line x1="12" x2="12" y1="4" y2="20"/></svg>',
-            content: "para propósitos de ahorro y/o inversión de mis recursos.",
-            position: { x: 16, y: 106.8 },
-            width: 147.12,
-            height: 6.56,
-            rotate: 0,
-            alignment: "left",
-            verticalAlignment: "top",
-            fontSize: 13,
-            lineHeight: 1,
-            characterSpacing: 0,
-            fontColor: "#000000",
-            backgroundColor: "",
-            opacity: 1,
-            readOnly: true,
-            fontName: "NotoSerifJP-Regular",
-          },
-          "field7 copy 11": {
-            type: "readOnlyText",
-            icon: '<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-type"><polyline points="4 7 4 4 20 4 20 7"/><line x1="9" x2="15" y1="20" y2="20"/><line x1="12" x2="12" y1="4" y2="20"/></svg>',
-            content:
-              "Acepto que he leído los términos y condiciones, así como el contenido de reglamento (s) del productoque establece la",
-            position: { x: 17, y: 119.8 },
-            width: 173.05,
-            height: 10.52,
-            rotate: 0,
-            alignment: "left",
-            verticalAlignment: "top",
-            fontSize: 11,
-            lineHeight: 1.4,
-            characterSpacing: 0,
-            fontColor: "#000000",
-            backgroundColor: "",
-            opacity: 1,
-            readOnly: true,
-            fontName: "NotoSerifJP-Regular",
-          },
-          "field7 copy 12": {
-            type: "readOnlyText",
-            icon: '<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-type"><polyline points="4 7 4 4 20 4 20 7"/><line x1="9" x2="15" y1="20" y2="20"/><line x1="12" x2="12" y1="4" y2="20"/></svg>',
-            content: "LESLEY TATIANA HORTA BARAJAS",
-            position: { x: 63, y: 125.8 },
-            width: 68.28,
-            height: 5.5,
-            rotate: 0,
-            alignment: "left",
-            verticalAlignment: "top",
-            fontSize: 11,
-            lineHeight: 1,
-            characterSpacing: 0,
-            fontColor: "#000000",
-            backgroundColor: "#7bff16",
-            opacity: 1,
-            readOnly: true,
-            fontName: "NotoSerifJP-Regular",
-          },
-          "field7 copy 13": {
-            type: "readOnlyText",
-            icon: '<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-type"><polyline points="4 7 4 4 20 4 20 7"/><line x1="9" x2="15" y1="20" y2="20"/><line x1="12" x2="12" y1="4" y2="20"/></svg>',
-            content: "aperturada en Alianza ",
-            position: { x: 132, y: 124.8 },
-            width: 44.99,
-            height: 7.34,
-            rotate: 0,
-            alignment: "left",
-            verticalAlignment: "top",
-            fontSize: 11,
-            lineHeight: 1.4,
-            characterSpacing: 0,
-            fontColor: "#000000",
-            backgroundColor: "",
-            opacity: 1,
-            readOnly: true,
-            fontName: "NotoSerifJP-Regular",
-          },
-          "field7 copy 14": {
-            type: "readOnlyText",
-            icon: '<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-type"><polyline points="4 7 4 4 20 4 20 7"/><line x1="9" x2="15" y1="20" y2="20"/><line x1="12" x2="12" y1="4" y2="20"/></svg>',
-            content:
-              "Solidaria de Ahorro y Créditoy que lo ha puesto a disposición de la página web www.alianzasolidaria.co , así mismo manifiesto que:",
-            position: { x: 16.74, y: 130.8 },
-            width: 180.72,
-            height: 10.52,
-            rotate: 0,
-            alignment: "left",
-            verticalAlignment: "top",
-            fontSize: 11,
-            lineHeight: 1.4,
-            characterSpacing: 0,
-            fontColor: "#000000",
-            backgroundColor: "",
-            opacity: 1,
-            readOnly: true,
-            fontName: "NotoSerifJP-Regular",
-          },
-          "field7 copy 15": {
-            type: "readOnlyText",
-            icon: '<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-type"><polyline points="4 7 4 4 20 4 20 7"/><line x1="9" x2="15" y1="20" y2="20"/><line x1="12" x2="12" y1="4" y2="20"/></svg>',
-            content:
-              "1. He leído y declaro conocer el reglamento (s) que establecen condiciones, las características y querigen la",
-            position: { x: 16.74, y: 147.8 },
-            width: 180.72,
-            height: 10.52,
-            rotate: 0,
-            alignment: "left",
-            verticalAlignment: "top",
-            fontSize: 11,
-            lineHeight: 1.4,
-            characterSpacing: 0,
-            fontColor: "#000000",
-            backgroundColor: "",
-            opacity: 1,
-            readOnly: true,
-            fontName: "NotoSerifJP-Regular",
-          },
-          "field7 copy 16": {
-            type: "readOnlyText",
-            icon: '<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-type"><polyline points="4 7 4 4 20 4 20 7"/><line x1="9" x2="15" y1="20" y2="20"/><line x1="12" x2="12" y1="4" y2="20"/></svg>',
-            content: "LÍNEA DE AHORRO MI NOMINA",
-            position: { x: 37, y: 153.8 },
-            width: 61.66,
-            height: 5.5,
-            rotate: 0,
-            alignment: "left",
-            verticalAlignment: "top",
-            fontSize: 11,
-            lineHeight: 1,
-            characterSpacing: 0,
-            fontColor: "#000000",
-            backgroundColor: "#7bff16",
-            opacity: 1,
-            readOnly: true,
-            fontName: "NotoSerifJP-Regular",
-          },
-          "field7 copy 17": {
-            type: "readOnlyText",
-            icon: '<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-type"><polyline points="4 7 4 4 20 4 20 7"/><line x1="9" x2="15" y1="20" y2="20"/><line x1="12" x2="12" y1="4" y2="20"/></svg>',
-            content: "A y lo acepto en su integridad de manera libre y",
-            position: { x: 101.22, y: 152.8 },
-            width: 93.4,
-            height: 7.34,
-            rotate: 0,
-            alignment: "left",
-            verticalAlignment: "top",
-            fontSize: 11,
-            lineHeight: 1.4,
-            characterSpacing: 0,
-            fontColor: "#000000",
-            backgroundColor: "",
-            opacity: 1,
-            readOnly: true,
-            fontName: "NotoSerifJP-Regular",
-          },
-          "field7 copy 18": {
-            type: "readOnlyText",
-            icon: '<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-type"><polyline points="4 7 4 4 20 4 20 7"/><line x1="9" x2="15" y1="20" y2="20"/><line x1="12" x2="12" y1="4" y2="20"/></svg>',
-            content: "espontánea.",
-            position: { x: 17.22, y: 158.8 },
-            width: 24.08,
-            height: 7.34,
-            rotate: 0,
-            alignment: "left",
-            verticalAlignment: "top",
-            fontSize: 11,
-            lineHeight: 1.4,
-            characterSpacing: 0,
-            fontColor: "#000000",
-            backgroundColor: "",
-            opacity: 1,
-            readOnly: true,
-            fontName: "NotoSerifJP-Regular",
-          },
-          "field7 copy 19": {
-            type: "readOnlyText",
-            icon: '<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-type"><polyline points="4 7 4 4 20 4 20 7"/><line x1="9" x2="15" y1="20" y2="20"/><line x1="12" x2="12" y1="4" y2="20"/></svg>',
-            content:
-              "2. Conozco que, en caso de tener dudas al respecto del producto, puedo ingresar awww.alianzasolidaria.co para obtener más información o puedo contactarme vía WhatsApp al 315 7792999 o al correo info@alianzasolidaria.co",
-            position: { x: 17.18, y: 168.8 },
-            width: 175.93,
-            height: 18.45,
-            rotate: 0,
-            alignment: "left",
-            verticalAlignment: "top",
-            fontSize: 11,
-            lineHeight: 1.4,
-            characterSpacing: 0,
-            fontColor: "#000000",
-            backgroundColor: "",
-            opacity: 1,
-            readOnly: true,
-            fontName: "NotoSerifJP-Regular",
-          },
-          "field7 copy 20": {
-            type: "readOnlyText",
-            icon: '<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-type"><polyline points="4 7 4 4 20 4 20 7"/><line x1="9" x2="15" y1="20" y2="20"/><line x1="12" x2="12" y1="4" y2="20"/></svg>',
-            content: "De acuerdo con lo anterior, atentamente.",
-            position: { x: 18, y: 196.8 },
-            width: 92.09,
-            height: 6.56,
-            rotate: 0,
-            alignment: "left",
-            verticalAlignment: "top",
-            fontSize: 13,
-            lineHeight: 1,
-            characterSpacing: 0,
-            fontColor: "#000000",
-            backgroundColor: "",
-            opacity: 1,
-            readOnly: true,
-            fontName: "NotoSerifJP-Regular",
-          },
-          field28: {
-            type: "line",
-            icon: '<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-minus"><path d="M5 12h14"/></svg>',
-            position: { x: 55, y: 225.03 },
-            width: 100,
-            height: 0.5,
-            rotate: 0,
-            opacity: 1,
-            readOnly: true,
-            color: "#00000099",
-          },
-          "field7 copy 21": {
-            type: "readOnlyText",
-            icon: '<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-type"><polyline points="4 7 4 4 20 4 20 7"/><line x1="9" x2="15" y1="20" y2="20"/><line x1="12" x2="12" y1="4" y2="20"/></svg>',
-            content: "LESLEY TATIANA HORTA BARAJAS",
-            position: { x: 63.85, y: 226.8 },
-            width: 82.31,
-            height: 6.56,
-            rotate: 0,
-            alignment: "left",
-            verticalAlignment: "top",
-            fontSize: 13,
-            lineHeight: 1,
-            characterSpacing: 0,
-            fontColor: "#000000",
-            backgroundColor: "#f5ff50",
-            opacity: 1,
-            readOnly: true,
-            fontName: "NotoSerifJP-Regular",
-          },
-          "field7 copy 22": {
-            type: "readOnlyText",
-            icon: '<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-type"><polyline points="4 7 4 4 20 4 20 7"/><line x1="9" x2="15" y1="20" y2="20"/><line x1="12" x2="12" y1="4" y2="20"/></svg>',
-            content: "CC",
-            position: { x: 84.32, y: 234.8 },
-            width: 8.75,
-            height: 6.56,
-            rotate: 0,
-            alignment: "left",
-            verticalAlignment: "top",
-            fontSize: 13,
-            lineHeight: 1,
-            characterSpacing: 0,
-            fontColor: "#000000",
-            backgroundColor: "",
-            opacity: 1,
-            readOnly: true,
-            fontName: "NotoSerifJP-Regular",
-          },
-          "field7 copy 23": {
-            type: "readOnlyText",
-            icon: '<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-type"><polyline points="4 7 4 4 20 4 20 7"/><line x1="9" x2="15" y1="20" y2="20"/><line x1="12" x2="12" y1="4" y2="20"/></svg>',
-            content: CC,
-            position: { x: 93, y: 234.8 },
-            width: 31.24,
-            height: 6.56,
-            rotate: 0,
-            alignment: "left",
-            verticalAlignment: "top",
-            fontSize: 13,
-            lineHeight: 1,
-            characterSpacing: 0,
-            fontColor: "#000000",
-            backgroundColor: "#f5ff50",
-            opacity: 1,
-            readOnly: true,
-            fontName: "NotoSerifJP-Regular",
-          },
-          "field7 copy 24": {
-            type: "readOnlyText",
-            icon: '<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-type"><polyline points="4 7 4 4 20 4 20 7"/><line x1="9" x2="15" y1="20" y2="20"/><line x1="12" x2="12" y1="4" y2="20"/></svg>',
-            content: "FIRMA ELECTRONICA",
-            position: { x: 78.8, y: 240.8 },
-            width: 52.4,
-            height: 6.56,
-            rotate: 0,
-            alignment: "left",
-            verticalAlignment: "top",
-            fontSize: 13,
-            lineHeight: 1,
-            characterSpacing: 0,
-            fontColor: "#000000",
-            backgroundColor: "",
-            opacity: 1,
-            readOnly: true,
-            fontName: "NotoSerifJP-Regular",
-          },
-        },
-      ],
-      basePdf: { width: 210, height: 297, padding: [0, 0, 0, 0] },
-    };
-
-    const plugins = {
-      text,
-      image,
-      qrcode: barcodes.qrcode,
-      line,
-      readOnlyText,
-    };
-    const inputs = [
-      {
-        field1: images.companyLogo,
-        field3: "NIT 901.813.044-1",
-        "field3 copy": "Ciudad de Bogota",
-        "field3 copy 2": "Calle 98 # 22 - 64 OFC 710",
-        "field3 copy 3": "Whatsapp 315 779 2999",
-        field7: "APERTURA LINEA DE AHORRO MI NOMINA",
-        "field7 copy": "30 ABRIL 2024",
-        "field7 copy 2": "Fecha apertura",
-        "field7 copy 3": "LESLEY TATIANA HORTA BARAJAS",
-        "field7 copy 4": "Nombres y Apellidos",
-        "field7 copy 5": " 1.013.675.227",
-        "field7 copy 6": "CC",
-        "field7 copy 7": "Solicito la apertura de",
-        "field7 copy 8": "LESLEY TATIANA HORTA BARAJAS",
-        "field7 copy 9": ", la cual será usada",
-        "field7 copy 10":
-          "para propósitos de ahorro y/o inversión de mis recursos.",
-        "field7 copy 11":
-          "Acepto que he leído los términos y condiciones, así como el contenido de reglamento (s) del productoque establece la",
-        "field7 copy 12": "LESLEY TATIANA HORTA BARAJAS",
-        "field7 copy 13": "aperturada en Alianza ",
-        "field7 copy 14":
-          "Solidaria de Ahorro y Créditoy que lo ha puesto a disposición de la página web www.alianzasolidaria.co , así mismo manifiesto que:",
-        "field7 copy 15":
-          "1. He leído y declaro conocer el reglamento (s) que establecen condiciones, las características y querigen la",
-        "field7 copy 16": savingType,
-        "field7 copy 17": "A y lo acepto en su integridad de manera libre y",
-        "field7 copy 18": "espontánea.",
-        "field7 copy 19":
-          "2. Conozco que, en caso de tener dudas al respecto del producto, puedo ingresar awww.alianzasolidaria.co para obtener más información o puedo contactarme vía WhatsApp al 315 7792999 o al correo info@alianzasolidaria.co",
-        "field7 copy 20": "De acuerdo con lo anterior, atentamente.",
-        "field7 copy 21": "LESLEY TATIANA HORTA BARAJAS",
-        "field7 copy 22": "CC",
-        "field7 copy 23": "1.013.675.227",
-        "field7 copy 24": "FIRMA ELECTRONICA",
-      },
-    ];
-
-    const pdf = await generate({ template, plugins, inputs });
-
-    // Generate both PDFs
-    const pdf1 = await generate({ template, plugins, inputs });
-
-    // Load both PDFs into PDF-lib
-    const pdfDoc1 = await PDFDocument.load(pdf1);
-
-    // Create a new PDF document
-    const mergedPdf = await PDFDocument.create();
-
-    // Copy pages from the first PDF document
-    const copiedPages1 = await mergedPdf.copyPages(
-      pdfDoc1,
-      pdfDoc1.getPageIndices()
-    );
-    copiedPages1.forEach((page) => {
-      mergedPdf.addPage(page);
-    });
-
-    // Serialize the merged PDF to bytes (Buffer)
-    const mergedPdfBytes = await mergedPdf.save();
-
-    // Define the upload parameters
-    const uploadParams = {
-      Bucket: "upload-pdf-v33",
-      Key: `pdfs/${Date.now()}-output.pdf`,
-      Body: Buffer.from(mergedPdfBytes),
-      ContentType: "application/pdf",
-    };
-
-    // Upload the merged PDF to S3
-    s3.upload(uploadParams, async (uploadErr: any, data: any) => {
-      if (uploadErr) {
-        console.error("Error uploading to S3:", uploadErr);
-        return res.status(500).json({
-          success: false,
-          message: "Failed to upload PDF to S3",
-          error: uploadErr,
-        });
-      }
-
-      // Generate a pre-signed URL for the uploaded PDF
-      const signedUrl = await s3.getSignedUrlPromise("getObject", {
-        Bucket: "upload-pdf-v33",
-        Key: uploadParams.Key,
-        Expires: 60 * 5, // Link expires in 5 minutes
-      });
-
-      res.json({
-        downloadUrl: signedUrl,
-        message: "PDF generated and uploaded successfully",
-      });
-    });
-  } catch (error) {
-    console.error("Unexpected error:", error);
-    res.status(500).json({
-      success: false,
-      message: "Something went wrong!",
-      error: error,
-    });
-  }
-};
-
 const generateMultiplePagePdf = async (req: Request, res: Response) => {
   try {
-    const { userName, CC, savingType } = req.body;
+    const {
+      userName,
+      CC,
+      savingType,
+      UserUID,
+      typeOfContract,
+      totalDepositValue,
+      company,
+    } = req.body;
+
+    const isexists = await PdfDataModel.findOne({ UserUID });
+
+    if (isexists) {
+      const result = await PdfDataModel.updateOne(
+        { UserUID: UserUID },
+        {
+          $set: {
+            userName: userName,
+            CC: CC,
+            savingType: savingType,
+            typeOfContract: typeOfContract,
+            totalDepositValue: totalDepositValue,
+            company: company,
+          },
+        }
+      );
+    } else {
+      const result = await PdfDataModel.create({
+        userName,
+        UserUID,
+        CC,
+        typeOfContract,
+        savingType,
+        totalDepositValue,
+        company,
+      });
+    }
 
     // --------------------------------------------------date
     // Get current date and time in Colombian time zone
@@ -1094,7 +373,7 @@ const generateMultiplePagePdf = async (req: Request, res: Response) => {
           "field7 copy 8": {
             type: "readOnlyText",
             icon: '<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-type"><polyline points="4 7 4 4 20 4 20 7"/><line x1="9" x2="15" y1="20" y2="20"/><line x1="12" x2="12" y1="4" y2="20"/></svg>',
-            content: "LÍNEA DE AHORRO MI NOMINA",
+            content: savingType,
             position: { x: 63, y: 100.8 },
             width: 73.31,
             height: 6.56,
@@ -1171,7 +450,7 @@ const generateMultiplePagePdf = async (req: Request, res: Response) => {
           "field7 copy 12": {
             type: "readOnlyText",
             icon: '<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-type"><polyline points="4 7 4 4 20 4 20 7"/><line x1="9" x2="15" y1="20" y2="20"/><line x1="12" x2="12" y1="4" y2="20"/></svg>',
-            content: "LÍNEA DE AHORRO MI NOMINA",
+            content: savingType,
             position: { x: 62, y: 125.8 },
             width: 62.46,
             height: 5.5,
@@ -1249,7 +528,7 @@ const generateMultiplePagePdf = async (req: Request, res: Response) => {
           "field7 copy 16": {
             type: "readOnlyText",
             icon: '<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-type"><polyline points="4 7 4 4 20 4 20 7"/><line x1="9" x2="15" y1="20" y2="20"/><line x1="12" x2="12" y1="4" y2="20"/></svg>',
-            content: "LÍNEA DE AHORRO MI NOMINA",
+            content: savingType,
             position: { x: 37, y: 153.8 },
             width: 61.66,
             height: 5.5,
@@ -1579,7 +858,7 @@ const generateMultiplePagePdf = async (req: Request, res: Response) => {
           "field1 copy 7": {
             type: "text",
             icon: '<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-text-cursor-input"><path d="M5 4h1a3 3 0 0 1 3 3 3 3 0 0 1 3-3h1"/><path d="M13 20h-1a3 3 0 0 1-3-3 3 3 0 0 1-3 3H5"/><path d="M5 16H4a2 2 0 0 1-2-2v-4a2 2 0 0 1 2-2h1"/><path d="M13 8h7a2 2 0 0 1 2 2v4a2 2 0 0 1-2 2h-7"/><path d="M9 7v10"/></svg>',
-            content: "Nombre y Apellidos",
+            content: userName,
             position: { x: 18.21, y: 103 },
             width: 38.9,
             height: 6.03,
@@ -1597,7 +876,7 @@ const generateMultiplePagePdf = async (req: Request, res: Response) => {
           "field1 copy 8": {
             type: "text",
             icon: '<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-text-cursor-input"><path d="M5 4h1a3 3 0 0 1 3 3 3 3 0 0 1 3-3h1"/><path d="M13 20h-1a3 3 0 0 1-3-3 3 3 0 0 1-3 3H5"/><path d="M5 16H4a2 2 0 0 1-2-2v-4a2 2 0 0 1 2-2h1"/><path d="M13 8h7a2 2 0 0 1 2 2v4a2 2 0 0 1-2 2h-7"/><path d="M9 7v10"/></svg>',
-            content: "1.013.675.227",
+            content: CC,
             position: { x: 124.21, y: 95 },
             width: 27.52,
             height: 6.03,
@@ -1651,7 +930,7 @@ const generateMultiplePagePdf = async (req: Request, res: Response) => {
           "field1 copy 11": {
             type: "text",
             icon: '<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-text-cursor-input"><path d="M5 4h1a3 3 0 0 1 3 3 3 3 0 0 1 3-3h1"/><path d="M13 20h-1a3 3 0 0 1-3-3 3 3 0 0 1-3 3H5"/><path d="M5 16H4a2 2 0 0 1-2-2v-4a2 2 0 0 1 2-2h1"/><path d="M13 8h7a2 2 0 0 1 2 2v4a2 2 0 0 1-2 2h-7"/><path d="M9 7v10"/></svg>',
-            content: "$500.00",
+            content: `$${totalDepositValue}`,
             position: { x: 70.21, y: 118 },
             width: 15.61,
             height: 6.03,
@@ -1687,7 +966,7 @@ const generateMultiplePagePdf = async (req: Request, res: Response) => {
           "field1 copy 13": {
             type: "text",
             icon: '<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-text-cursor-input"><path d="M5 4h1a3 3 0 0 1 3 3 3 3 0 0 1 3-3h1"/><path d="M13 20h-1a3 3 0 0 1-3-3 3 3 0 0 1-3 3H5"/><path d="M5 16H4a2 2 0 0 1-2-2v-4a2 2 0 0 1 2-2h1"/><path d="M13 8h7a2 2 0 0 1 2 2v4a2 2 0 0 1-2 2h-7"/><path d="M9 7v10"/></svg>',
-            content: "Tipo de contrato",
+            content: typeOfContract,
             position: { x: 18.21, y: 125 },
             width: 32.55,
             height: 6.03,
@@ -1723,7 +1002,7 @@ const generateMultiplePagePdf = async (req: Request, res: Response) => {
           "field1 copy 15": {
             type: "text",
             icon: '<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-text-cursor-input"><path d="M5 4h1a3 3 0 0 1 3 3 3 3 0 0 1 3-3h1"/><path d="M13 20h-1a3 3 0 0 1-3-3 3 3 0 0 1-3 3H5"/><path d="M5 16H4a2 2 0 0 1-2-2v-4a2 2 0 0 1 2-2h1"/><path d="M13 8h7a2 2 0 0 1 2 2v4a2 2 0 0 1-2 2h-7"/><path d="M9 7v10"/></svg>',
-            content: "Empresa",
+            content: company,
             position: { x: 112.21, y: 125 },
             width: 18.79,
             height: 6.03,
@@ -1814,7 +1093,7 @@ const generateMultiplePagePdf = async (req: Request, res: Response) => {
           "field1 copy 20": {
             type: "text",
             icon: '<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-text-cursor-input"><path d="M5 4h1a3 3 0 0 1 3 3 3 3 0 0 1 3-3h1"/><path d="M13 20h-1a3 3 0 0 1-3-3 3 3 0 0 1-3 3H5"/><path d="M5 16H4a2 2 0 0 1-2-2v-4a2 2 0 0 1 2-2h1"/><path d="M13 8h7a2 2 0 0 1 2 2v4a2 2 0 0 1-2 2h-7"/><path d="M9 7v10"/></svg>',
-            content: "1.013.675.227",
+            content: CC,
             position: { x: 18.21, y: 160 },
             width: 27.52,
             height: 6.03,
@@ -1935,7 +1214,7 @@ const generateMultiplePagePdf = async (req: Request, res: Response) => {
           "field1 copy 26": {
             type: "text",
             icon: '<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-text-cursor-input"><path d="M5 4h1a3 3 0 0 1 3 3 3 3 0 0 1 3-3h1"/><path d="M13 20h-1a3 3 0 0 1-3-3 3 3 0 0 1-3 3H5"/><path d="M5 16H4a2 2 0 0 1-2-2v-4a2 2 0 0 1 2-2h1"/><path d="M13 8h7a2 2 0 0 1 2 2v4a2 2 0 0 1-2 2h-7"/><path d="M9 7v10"/></svg>',
-            content: "1.013.675.227",
+            content: CC,
             position: { x: 96.24, y: 238 },
             width: 27.52,
             height: 6.03,
