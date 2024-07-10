@@ -26,7 +26,7 @@ AWS.config.update({
 
 const s3 = new AWS.S3();
 
-const generateMultiplePagePdf = async (req: Request, res: Response) => {
+const secondPdf = async (req: Request, res: Response) => {
   try {
     const {
       userName,
@@ -1364,15 +1364,51 @@ const generateMultiplePagePdf = async (req: Request, res: Response) => {
       plugins,
       inputs,
     });
+    const pdf3 = await generate({
+      template,
+      plugins,
+      inputs,
+    });
+    const pdf4 = await generate({
+      template,
+      plugins,
+      inputs,
+    });
+    const pdf5 = await generate({
+      template,
+      plugins,
+      inputs,
+    });
+    const pdf6 = await generate({
+      template,
+      plugins,
+      inputs,
+    });
+    const pdf7 = await generate({
+      template,
+      plugins,
+      inputs,
+    });
+    const pdf8 = await generate({
+      template,
+      plugins,
+      inputs,
+    });
 
     // Load both PDFs into PDF-lib
     const pdfDoc1 = await PDFDocument.load(pdf1);
     const pdfDoc2 = await PDFDocument.load(pdf2);
+    const pdfDoc3 = await PDFDocument.load(pdf3);
+    const pdfDoc4 = await PDFDocument.load(pdf4);
+    const pdfDoc5 = await PDFDocument.load(pdf5);
+    const pdfDoc6 = await PDFDocument.load(pdf6);
+    const pdfDoc7 = await PDFDocument.load(pdf7);
+    const pdfDoc8 = await PDFDocument.load(pdf8);
 
     // Create a new PDF document
     const mergedPdf = await PDFDocument.create();
 
-    // Copy pages from the first PDF document
+    // Copy pages from the first PDF document 1
     const copiedPages1 = await mergedPdf.copyPages(
       pdfDoc1,
       pdfDoc1.getPageIndices()
@@ -1381,12 +1417,66 @@ const generateMultiplePagePdf = async (req: Request, res: Response) => {
       mergedPdf.addPage(page);
     });
 
-    // Copy pages from the second PDF document
+    // Copy pages from the second PDF document 2
     const copiedPages2 = await mergedPdf.copyPages(
       pdfDoc2,
       pdfDoc2.getPageIndices()
     );
     copiedPages2.forEach((page) => {
+      mergedPdf.addPage(page);
+    });
+
+    // Copy pages from the second PDF document 3
+    const copiedPages3 = await mergedPdf.copyPages(
+      pdfDoc3,
+      pdfDoc3.getPageIndices()
+    );
+    copiedPages3.forEach((page) => {
+      mergedPdf.addPage(page);
+    });
+
+    // Copy pages from the second PDF document 4
+    const copiedPages4 = await mergedPdf.copyPages(
+      pdfDoc4,
+      pdfDoc4.getPageIndices()
+    );
+    copiedPages4.forEach((page) => {
+      mergedPdf.addPage(page);
+    });
+
+    // Copy pages from the second PDF document 5
+    const copiedPages5 = await mergedPdf.copyPages(
+      pdfDoc5,
+      pdfDoc5.getPageIndices()
+    );
+    copiedPages5.forEach((page) => {
+      mergedPdf.addPage(page);
+    });
+
+    // Copy pages from the second PDF document 6
+    const copiedPages6 = await mergedPdf.copyPages(
+      pdfDoc6,
+      pdfDoc6.getPageIndices()
+    );
+    copiedPages6.forEach((page) => {
+      mergedPdf.addPage(page);
+    });
+
+    // Copy pages from the second PDF document 7
+    const copiedPages7 = await mergedPdf.copyPages(
+      pdfDoc7,
+      pdfDoc7.getPageIndices()
+    );
+    copiedPages7.forEach((page) => {
+      mergedPdf.addPage(page);
+    });
+
+    // Copy pages from the second PDF document 8
+    const copiedPages8 = await mergedPdf.copyPages(
+      pdfDoc8,
+      pdfDoc8.getPageIndices()
+    );
+    copiedPages8.forEach((page) => {
       mergedPdf.addPage(page);
     });
 
@@ -1434,7 +1524,6 @@ const generateMultiplePagePdf = async (req: Request, res: Response) => {
   }
 };
 
-export const PdfController = {
-  // generateSinglePdf,
-  generateMultiplePagePdf,
+export const SecondPdfController = {
+  secondPdf,
 };
