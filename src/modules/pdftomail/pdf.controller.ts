@@ -908,7 +908,7 @@ const generateMultiplePagePdf = async (req: Request, res: Response) => {
           "field1 copy 10": {
             type: "text",
             icon: '<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-text-cursor-input"><path d="M5 4h1a3 3 0 0 1 3 3 3 3 0 0 1 3-3h1"/><path d="M13 20h-1a3 3 0 0 1-3-3 3 3 0 0 1-3 3H5"/><path d="M5 16H4a2 2 0 0 1-2-2v-4a2 2 0 0 1 2-2h1"/><path d="M13 8h7a2 2 0 0 1 2 2v4a2 2 0 0 1-2 2h-7"/><path d="M9 7v10"/></svg>',
-            content: "INDEFINIDO",
+            content: typeOfContract,
             position: { x: 18.21, y: 117 },
             width: 26.46,
             height: 6.03,
@@ -944,7 +944,7 @@ const generateMultiplePagePdf = async (req: Request, res: Response) => {
           "field1 copy 12": {
             type: "text",
             icon: '<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-text-cursor-input"><path d="M5 4h1a3 3 0 0 1 3 3 3 3 0 0 1 3-3h1"/><path d="M13 20h-1a3 3 0 0 1-3-3 3 3 0 0 1-3 3H5"/><path d="M5 16H4a2 2 0 0 1-2-2v-4a2 2 0 0 1 2-2h1"/><path d="M13 8h7a2 2 0 0 1 2 2v4a2 2 0 0 1-2 2h-7"/><path d="M9 7v10"/></svg>',
-            content: "BRAIN CONSULTORES S.AS",
+            content: company,
             position: { x: 112.21, y: 118 },
             width: 52.65,
             height: 6.03,
@@ -962,7 +962,7 @@ const generateMultiplePagePdf = async (req: Request, res: Response) => {
           "field1 copy 13": {
             type: "text",
             icon: '<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-text-cursor-input"><path d="M5 4h1a3 3 0 0 1 3 3 3 3 0 0 1 3-3h1"/><path d="M13 20h-1a3 3 0 0 1-3-3 3 3 0 0 1-3 3H5"/><path d="M5 16H4a2 2 0 0 1-2-2v-4a2 2 0 0 1 2-2h1"/><path d="M13 8h7a2 2 0 0 1 2 2v4a2 2 0 0 1-2 2h-7"/><path d="M9 7v10"/></svg>',
-            content: typeOfContract,
+            content: "Tipo de contrato",
             position: { x: 18.21, y: 125 },
             width: 32.55,
             height: 6.03,
@@ -1326,9 +1326,9 @@ const generateMultiplePagePdf = async (req: Request, res: Response) => {
         "field1 copy 7": "Nombre y Apellidos",
         "field1 copy 8": CC,
         "field1 copy 9": "CC",
-        "field1 copy 10": "INDEFINIDO",
+        "field1 copy 10": typeOfContract,
         "field1 copy 11": `$${totalDepositValue}`,
-        "field1 copy 12": "BRAIN CONSULTORES S.AS",
+        "field1 copy 12": company,
         "field1 copy 13": "Tipo de contrato",
         "field1 copy 14": "Valor Aporte",
         "field1 copy 15": "Empresa",
