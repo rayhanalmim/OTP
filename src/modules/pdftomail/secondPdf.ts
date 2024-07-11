@@ -15,7 +15,7 @@ import {
 import config from "../../config";
 import { PDFDocument } from "pdf-lib"; // Temporarily using pdf-lib for merging
 import { images } from "./images";
-import { PdfDataModel } from "./pdf.model";
+import { PdfDataModel, SecondPdfData } from "./pdf.model";
 
 // Configure AWS
 AWS.config.update({
@@ -39,33 +39,7 @@ const secondPdf = async (req: Request, res: Response) => {
       company,
     } = req.body;
 
-    const isexists = await PdfDataModel.findOne({ UserUID });
-
-    if (isexists) {
-      const result = await PdfDataModel.updateOne(
-        { UserUID: UserUID },
-        {
-          $set: {
-            userName: userName,
-            CC: CC,
-            savingType: savingType,
-            typeOfContract: typeOfContract,
-            totalDepositValue: totalDepositValue,
-            company: company,
-          },
-        }
-      );
-    } else {
-      const result = await PdfDataModel.create({
-        userName,
-        UserUID,
-        CC,
-        typeOfContract,
-        savingType,
-        totalDepositValue,
-        company,
-      });
-    }
+    const result = await SecondPdfData.create(req.body);
 
     // --------------------------------------------------date
     // Get current date and time in Colombian time zone

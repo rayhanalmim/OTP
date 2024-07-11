@@ -4,10 +4,6 @@ import { VerifyedPdfController } from "./verifiedPdfController";
 import { SecondPdfController } from "./secondPdf";
 const router = express.Router();
 
-// router.post(
-//   "/generate-single-pdf-before-verification",
-//   PdfController.generateSinglePdf
-// );
 router.post(
   "/generate-multi-pdf-before-verification",
   PdfController.generateMultiplePagePdf
