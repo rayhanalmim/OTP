@@ -1729,6 +1729,7 @@ const verifyedMultiplePagePdf = async (req: Request, res: Response) => {
       Key: `pdfs/${Date.now()}-output.pdf`,
       Body: Buffer.from(mergedPdfBytes),
       ContentType: "application/pdf",
+      ACL: "public-read", // Add this line to make the file public
     };
 
     // Upload the merged PDF to S3
@@ -1746,7 +1747,7 @@ const verifyedMultiplePagePdf = async (req: Request, res: Response) => {
       const signedUrl = await s3.getSignedUrlPromise("getObject", {
         Bucket: "upload-pdf-v33",
         Key: uploadParams.Key,
-        Expires: 60 * 5, // Link expires in 5 minutes
+        Expires: 60 * 60 * 24 * 7, // Link expires in 7 days
       });
 
       res.json({

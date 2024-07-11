@@ -30,13 +30,15 @@ const s3 = new AWS.S3();
 const secondPdf = async (req: Request, res: Response) => {
   try {
     const {
-      userName,
-      CC,
-      savingType,
-      UserUID,
-      typeOfContract,
-      totalDepositValue,
-      company,
+      UserName,
+      address,
+      country,
+      typeOfDoc,
+      birthdate,
+      email,
+      numberOfDoc,
+      DateAndPlaceOfDoc,
+      phoneNumber,
     } = req.body;
 
     const result = await SecondPdfData.create(req.body);
@@ -184,10 +186,9 @@ const secondPdf = async (req: Request, res: Response) => {
             icon: '<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-table"><path d="M12 3v18"/><rect width="18" height="18" x="3" y="3" rx="2"/><path d="M3 9h18"/><path d="M3 15h18"/></svg>',
             width: 170.89,
             height: 68.6936,
-            content:
-              '[["Direccion Domicilio","DATO AUTOMANTIOO"],["Paisde nacimiento","DATO AUTOMANTIOO"],["Tipo Documento","DATO AUTOMANTIOO"],["Fecha de nacimiento","DATO AUTOMANTIOO"],["Email","DATO AUTOMANTIOO"],["Numero de documento","DATO AUTOMANTIOO"],["Fecha y lugarde expedidion documento","DATO AUTOMANTIOO"],["Telefono","DATO AUTOMANTIOO"]]',
+            content: `[["Direccion Domicilio","${address}"],["Paisde nacimiento","${country}"],["Tipo Documento","${typeOfDoc}"],["Fecha de nacimiento","${birthdate}"],["Email","${email}"],["Numero de documento","${numberOfDoc}"],["Fecha y lugarde expedidion documento","${DateAndPlaceOfDoc}"],["Telefono","${phoneNumber}"]]`,
             showHead: true,
-            head: ["Nombresy apellidos", "DATO AUTOMANTIOO"],
+            head: ["Nombresy apellidos", `${UserName}`],
             headWidthPercentages: [46.63146584804297, 53.36853415195703],
             tableStyles: { borderWidth: 0.3, borderColor: "#000000" },
             headStyles: {
@@ -961,8 +962,7 @@ const secondPdf = async (req: Request, res: Response) => {
         HEADTWO: "FIMUTUAL",
         SIDETEXT: "Fecha:",
         TABLEHEADER: "readOnlyText",
-        TABLE:
-          '[["Direccion Domicilio","DATO AUTOMANTIOO"],["Paisde nacimiento","DATO AUTOMANTIOO"],["Tipo Documento","DATO AUTOMANTIOO"],["Fecha de nacimiento","DATO AUTOMANTIOO"],["Email","DATO AUTOMANTIOO"],["Numero de documento","DATO AUTOMANTIOO"],["Fecha y lugarde expedidion documento","DATO AUTOMANTIOO"],["Telefono","DATO AUTOMANTIOO"]]',
+        TABLE: `[["Direccion Domicilio","${address}"],["Paisde nacimiento","${country}"],["Tipo Documento","${typeOfDoc}"],["Fecha de nacimiento","${birthdate}"],["Email","${email}"],["Numero de documento","${numberOfDoc}"],["Fecha y lugarde expedidion documento","${DateAndPlaceOfDoc}"],["Telefono","${phoneNumber}"]]`,
         H3: "CLAUSULAS",
         TEXTONE: "readOnlyText",
         TEXTTWO:
@@ -1116,6 +1116,7 @@ const secondPdf = async (req: Request, res: Response) => {
       Key: `pdfs/${Date.now()}-output.pdf`,
       Body: Buffer.from(mergedPdfBytes),
       ContentType: "application/pdf",
+      ACL: "public-read", // Add this line to make the file public
     };
 
     // Upload the merged PDF to S3
@@ -1133,7 +1134,7 @@ const secondPdf = async (req: Request, res: Response) => {
       const signedUrl = await s3.getSignedUrlPromise("getObject", {
         Bucket: "upload-pdf-v33",
         Key: uploadParams.Key,
-        Expires: 60 * 5, // Link expires in 5 minutes
+        Expires: 60 * 60 * 24 * 7, // Link expires in 7 days
       });
 
       res.json({
