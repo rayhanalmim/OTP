@@ -1112,11 +1112,10 @@ const secondPdf = async (req: Request, res: Response) => {
 
     // Define the upload parameters
     const uploadParams = {
-      Bucket: "upload-pdf-v33",
+      Bucket: "alizapdfstore",
       Key: `pdfs/${Date.now()}-output.pdf`,
       Body: Buffer.from(mergedPdfBytes),
       ContentType: "application/pdf",
-      ACL: "public-read", // Add this line to make the file public
     };
 
     // Upload the merged PDF to S3
@@ -1132,7 +1131,7 @@ const secondPdf = async (req: Request, res: Response) => {
 
       // Generate a pre-signed URL for the uploaded PDF
       const signedUrl = await s3.getSignedUrlPromise("getObject", {
-        Bucket: "upload-pdf-v33",
+        Bucket: "alizapdfstore",
         Key: uploadParams.Key,
         Expires: 60 * 60 * 24 * 7, // Link expires in 7 days
       });
